@@ -149,7 +149,7 @@ fun Sentence(): String {
 }
 
 @Composable
-fun Randsentence(modifier: Modifier = Modifier) {
+fun Randsentence(sentence2:String, modifier: Modifier = Modifier) {
     // Assuming 'sentences' is a List<String> defined elsewhere
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
@@ -159,7 +159,7 @@ fun Randsentence(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center // Centers the text box within its allocated space
         ) {
             Text(
-                text = Sentence(),
+                text = sentence2,
                 fontSize = 30.sp,
                 style = TextStyle(color = Color.Black), // Set text color to black
                 modifier = Modifier
@@ -187,21 +187,26 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 fun MainScreen() {
+    var sentence2 = Sentence()
     Column(modifier = Modifier.fillMaxSize()) {
-        UpperFunction()
-        Randsentence()
+        UpperFunction(sentence2)
+        Randsentence(sentence2)
     }
 }
 
 
 @Composable
-fun UpperFunction() {
+fun UpperFunction(sentence2:String) {
+    var sentence = sentence2
     // State to hold the text input
     var text by remember { mutableStateOf("") }
     // Initialize the timer
     val timer = remember { InputTimer() }
     // Remember the duration for display
     val duration = remember { mutableStateOf(0L) }
+    var currentSentence by remember { mutableStateOf(Sentence()) } // Initialize with a sentence
+    var next by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier.padding(16.dp),
@@ -222,44 +227,48 @@ fun UpperFunction() {
             singleLine = true,
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = {
-                duration.value = timer.complete() // Get final time on completion
+                duration.value = (text.length.toDouble())/(timer.complete()) // Get final time on completion
                 handleInput(text, duration.value) // Implement this function to handle the input
             }),
             modifier = Modifier.fillMaxWidth()
         )
         Button(
             onClick = {
-                duration.value = timer.complete() // Get final time on completion
+                duration.value = (text.length)/(timer.complete()) // Get final time on completion
                 handleInput(text, duration.value) // Implement this function to handle the input
+                var sentence = Sentence()
+                currentSentence = sentence // This will trigger recomposition
+                next = true
             },
             modifier = Modifier.padding(top = 8.dp)
         ) {
             Text("Next")
         }
-
+        if (next) {
+            Text("Time taken per character: ${duration.value} s " + "Time elapsed: ")
         // Optionally display the timing info
-        if (duration.value > 0) {
-            Text("Time taken: ${duration.value} ms")
+
         }
+        Randsentence(sentence2 = currentSentence)
     }
 }
 
 // Adjusted handleInput function to accept duration
-fun handleInput(input: String, duration: Long) {
+fun handleInput(input: String, duration: Double) {
     // Handle the input and the duration (e.g., show a Toast, navigate, update UI)
     Log.d("InputHandling", "User input: $input, Duration: $duration ms")
 }
 
 // Function to manage timing logic
 class InputTimer {
-    private var startTime: Long = 0
+    private var startTime: Double = 0.0
     private var started: Boolean = false
 
     // Call this method to start or get the elapsed time
-    fun manageTime(inputLength: Int): Long {
+    fun manageTime(inputLength: Int): Any {
         if (!started && inputLength > 0) {
             // Start the timer
-            startTime = System.currentTimeMillis()
+            startTime = ((System.currentTimeMillis())/1000).toDouble()
             started = true
             return 0L // Initial call, timer just started
         } else if (started && inputLength == 0) {
@@ -273,13 +282,13 @@ class InputTimer {
     }
 
     // Call this when input is completed to get final time and reset
-    fun complete(): Long {
+    fun complete(): Double {
         if (started) {
-            val elapsedTime = System.currentTimeMillis() - startTime
+            val elapsedTime = ((System.currentTimeMillis())/1000) - startTime
             // Reset for next input
             started = false
             return elapsedTime
         }
-        return 0L
+        return 0.0
     }
 }
