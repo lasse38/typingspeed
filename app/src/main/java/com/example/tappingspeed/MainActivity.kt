@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,11 +21,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import com.example.tappingspeed.ui.theme.TappingspeedTheme
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -36,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
+import kotlin.math.roundToLong
 
 
 val sentences = listOf(
@@ -197,15 +195,10 @@ fun MainScreen() {
 
 @Composable
 fun UpperFunction(sentence2:String) {
-    var sentence = sentence2
-    // State to hold the text input
     var text by remember { mutableStateOf("") }
-    // Initialize the timer
     val timer = remember { InputTimer() }
-    // Remember the duration for display
-    val duration = remember { mutableStateOf(0L) }
     var currentSentence by remember { mutableStateOf(Sentence()) } // Initialize with a sentence
-    var next by remember { mutableStateOf(false) }
+    var charsPerSecond by remember { mutableStateOf(0.0) }
 
 
     Column(
@@ -220,72 +213,58 @@ fun UpperFunction(sentence2:String) {
         TextField(
             value = text,
             onValueChange = { newText ->
+                if (newText.length == 1) { // Start timer on first character input
+                    timer.manageTime()
+                }
                 text = newText
-                // Manage the timer based on input length
-                timer.manageTime(newText.length)
             },
             singleLine = true,
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = {
-                duration.value = (text.length.toDouble())/(timer.complete()) // Get final time on completion
-                handleInput(text, duration.value) // Implement this function to handle the input
-            }),
             modifier = Modifier.fillMaxWidth()
         )
         Button(
             onClick = {
-                duration.value = (text.length)/(timer.complete()) // Get final time on completion
-                handleInput(text, duration.value) // Implement this function to handle the input
-                var sentence = Sentence()
-                currentSentence = sentence // This will trigger recomposition
-                next = true
+                val elapsedTime = timer.complete() // Get elapsed time in seconds
+                if (text.isNotEmpty()) {
+                    charsPerSecond = text.length / elapsedTime // Calculate characters per second
+                    handleInput(text, charsPerSecond)
+                }
+                currentSentence = Sentence()
+                // Reset text for next input
+                text = ""
             },
             modifier = Modifier.padding(top = 8.dp)
         ) {
             Text("Next")
         }
-        if (next) {
-            Text("Time taken per character: ${duration.value} s " + "Time elapsed: ")
-        // Optionally display the timing info
-
+        if (charsPerSecond > 0) {
+            Text("Characters per second typed: $charsPerSecond")
         }
         Randsentence(sentence2 = currentSentence)
     }
 }
 
 // Adjusted handleInput function to accept duration
-fun handleInput(input: String, duration: Double) {
-    // Handle the input and the duration (e.g., show a Toast, navigate, update UI)
-    Log.d("InputHandling", "User input: $input, Duration: $duration ms")
+fun handleInput(input: String, charsPerSecond: Double) {
+    // Handle the input and characters per second calculation
+    Log.d("InputHandling", "User input: $input, Chars per second: $charsPerSecond")
 }
 
 // Function to manage timing logic
 class InputTimer {
-    private var startTime: Double = 0.0
+    private var startTime: Long = 0L
     private var started: Boolean = false
 
-    // Call this method to start or get the elapsed time
-    fun manageTime(inputLength: Int): Any {
-        if (!started && inputLength > 0) {
-            // Start the timer
-            startTime = ((System.currentTimeMillis())/1000).toDouble()
+    fun manageTime() {
+        if (!started) {
+            startTime = System.currentTimeMillis()
             started = true
-            return 0L // Initial call, timer just started
-        } else if (started && inputLength == 0) {
-            // Reset timer if input is cleared
-            started = false
-            return 0L
-        } else {
-            // Calculate and return the elapsed time without stopping the timer
-            return System.currentTimeMillis() - startTime
         }
     }
 
-    // Call this when input is completed to get final time and reset
     fun complete(): Double {
         if (started) {
-            val elapsedTime = ((System.currentTimeMillis())/1000) - startTime
-            // Reset for next input
+            val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
             started = false
             return elapsedTime
         }
