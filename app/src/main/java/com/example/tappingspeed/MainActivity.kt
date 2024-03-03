@@ -24,16 +24,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
-import kotlin.math.roundToLong
 
 
 val sentences = listOf(
@@ -185,7 +184,7 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 fun MainScreen() {
-    var sentence2 = Sentence()
+    val sentence2 = Sentence()
     Column(modifier = Modifier.fillMaxSize()) {
         UpperFunction(sentence2)
         Randsentence(sentence2)
@@ -197,8 +196,8 @@ fun MainScreen() {
 fun UpperFunction(sentence2:String) {
     var text by remember { mutableStateOf("") }
     val timer = remember { InputTimer() }
-    var currentSentence by remember { mutableStateOf(Sentence()) } // Initialize with a sentence
-    var charsPerSecond by remember { mutableStateOf(0.0) }
+    var currentSentence by remember { mutableStateOf(sentence2) }
+    var charsPerSecond by remember { mutableDoubleStateOf(0.0) }
 
 
     Column(
@@ -239,8 +238,27 @@ fun UpperFunction(sentence2:String) {
         }
         if (charsPerSecond > 0) {
             Text("Characters per second typed: $charsPerSecond")
+            Text("You have written " + correct(currentSentence, text, 0, 100.0) + "Percent of all Characters correctly")
         }
         Randsentence(sentence2 = currentSentence)
+    }
+}
+
+fun correct(correcttext:String, inputtext:String, index:Int, correctness:Double): Double {
+    if (index >= correcttext.length-1 && index >= inputtext.length-1) {
+        return correctness
+    }
+    if (index >= correcttext.length-1 && !(index >= inputtext.length-1)) {
+        return (correctness-((inputtext.length-index)/inputtext.length))
+    }
+    if (!(index >= correcttext.length-1) && index >= inputtext.length-1) {
+        return (correctness-((correcttext.length-index)/correcttext.length))
+    }
+    return if (correcttext[index]==inputtext[index]){
+        correct(correcttext, inputtext, (index+1), correctness)
+    }
+    else {
+        correct(correcttext, inputtext, (index+1), (correctness-(1.0/inputtext.length)))
     }
 }
 
