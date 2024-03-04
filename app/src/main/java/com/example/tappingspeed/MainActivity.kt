@@ -139,9 +139,8 @@ val sentences = listOf(
 )
 
 fun Sentence(): String {
-    val randomIndex = Random.nextInt(sentences.size-1)
-    val sentence = sentences[randomIndex]
-    return sentence
+    val randomIndex = Random.nextInt(sentences.size - 1)
+    return sentences[randomIndex]
 
 }
 
@@ -249,7 +248,7 @@ fun UpperFunction(sentence2:String) {
         }
         if (charsPerSecond > 0) {
             Text("Characters per second typed: " + String.format("%.2f", charsPerSecond))
-            Text("You have written " + correctness + "% of all Characters correctly")
+            Text("You have written $correctness% of all Characters correctly")
         }
         Randsentence(sentence2 = currentSentence)
     }
@@ -265,8 +264,8 @@ fun calculateCorrectness(correctText: String, inputText: String): Double {
     }
 
     val matchedCharacters = recurse(0, 0)
-    val Length = correctText.length
-    return (matchedCharacters.toDouble() / Length) * 100
+    val length = correctText.length
+    return (matchedCharacters.toDouble() / length) * 100
 }
 
 
@@ -290,16 +289,14 @@ class InputTimer {
 
     fun complete(): Double {
         if (started) {
-            val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
             started = false
-            return elapsedTime
+            return (System.currentTimeMillis() - startTime) / 1000.0
         }
         return 0.0
     }
     fun timeNow(): Double{
         if (started) {
-            val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
-            return elapsedTime
+            return (System.currentTimeMillis() - startTime) / 1000.0
         }
         return 0.0
     }
