@@ -24,16 +24,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
-import kotlin.math.roundToLong
 
 
 val sentences = listOf(
@@ -140,9 +139,8 @@ val sentences = listOf(
 )
 
 fun Sentence(): String {
-    val randomIndex = Random.nextInt(sentences.size-1)
-    val sentence = sentences[randomIndex]
-    return sentence
+    val randomIndex = Random.nextInt(sentences.size - 1)
+    return sentences[randomIndex]
 
 }
 
@@ -153,7 +151,7 @@ fun Randsentence(sentence2:String, modifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(),
+                .fillMaxHeight(0.8f),
             contentAlignment = Alignment.Center // Centers the text box within its allocated space
         ) {
             Text(
@@ -162,7 +160,8 @@ fun Randsentence(sentence2:String, modifier: Modifier = Modifier) {
                 style = TextStyle(color = Color.Black), // Set text color to black
                 modifier = Modifier
                     .background(Color(0xFFFFA500)) // Set background to orange using ARGB
-                    .padding(16.dp) // Add some padding around the text for better aesthetics
+                    .padding(20.dp) // Add some padding around the text for better aesthetics
+                    .padding(bottom = 20.dp)
             )
         }
     }
@@ -185,10 +184,9 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 fun MainScreen() {
-    var sentence2 = Sentence()
+    val sentence2 = Sentence()
     Column(modifier = Modifier.fillMaxSize()) {
         UpperFunction(sentence2)
-        Randsentence(sentence2)
     }
 }
 
@@ -197,8 +195,10 @@ fun MainScreen() {
 fun UpperFunction(sentence2:String) {
     var text by remember { mutableStateOf("") }
     val timer = remember { InputTimer() }
-    var currentSentence by remember { mutableStateOf(Sentence()) } // Initialize with a sentence
-    var charsPerSecond by remember { mutableStateOf(0.0) }
+    var currentSentence by remember { mutableStateOf(sentence2) }
+    var charsPerSecond by remember { mutableDoubleStateOf(0.0) }
+    var click = false
+    var correctness = 100.0
 
 
     Column(
@@ -225,9 +225,11 @@ fun UpperFunction(sentence2:String) {
         Button(
             onClick = {
                 val elapsedTime = timer.complete() // Get elapsed time in seconds
+                click = true
                 if (text.isNotEmpty()) {
                     charsPerSecond = text.length / elapsedTime // Calculate characters per second
                     handleInput(text, charsPerSecond)
+                    correctness = calculateCorrectness(currentSentence, text)
                 }
                 currentSentence = Sentence()
                 // Reset text for next input
@@ -237,12 +239,35 @@ fun UpperFunction(sentence2:String) {
         ) {
             Text("Next")
         }
+        if (!click) {
+            val elapsedTime = timer.timeNow() // Get elapsed time in seconds
+            if (text.isNotEmpty()) {
+                charsPerSecond = text.length / elapsedTime // Calculate characters per second
+                correctness = calculateCorrectness(currentSentence, text)
+            }
+        }
         if (charsPerSecond > 0) {
-            Text("Characters per second typed: $charsPerSecond")
+            Text("Characters per second typed: " + String.format("%.2f", charsPerSecond))
+            Text("You have written $correctness% of all Characters correctly")
         }
         Randsentence(sentence2 = currentSentence)
     }
 }
+
+fun calculateCorrectness(correctText: String, inputText: String): Double {
+    fun recurse(index: Int, matches: Int): Int {
+        if (index >= correctText.length || index >= inputText.length) {
+            return matches
+        }
+        val newMatches = if (correctText[index] == inputText[index]) matches + 1 else matches
+        return recurse(index + 1, newMatches)
+    }
+
+    val matchedCharacters = recurse(0, 0)
+    val length = correctText.length
+    return (matchedCharacters.toDouble() / length) * 100
+}
+
 
 // Adjusted handleInput function to accept duration
 fun handleInput(input: String, charsPerSecond: Double) {
@@ -264,9 +289,14 @@ class InputTimer {
 
     fun complete(): Double {
         if (started) {
-            val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
             started = false
-            return elapsedTime
+            return (System.currentTimeMillis() - startTime) / 1000.0
+        }
+        return 0.0
+    }
+    fun timeNow(): Double{
+        if (started) {
+            return (System.currentTimeMillis() - startTime) / 1000.0
         }
         return 0.0
     }
