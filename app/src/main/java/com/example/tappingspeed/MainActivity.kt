@@ -248,7 +248,7 @@ fun UpperFunction(sentence2:String) {
         }
         if (charsPerSecond > 0) {
             Text("Characters per second typed: " + String.format("%.2f", charsPerSecond))
-            Text("You have written $correctness% of all Characters correctly")
+            Text("You have written " + String.format("%.2f", correctness) + "% of all Characters correctly")
         }
         Randsentence(sentence2 = currentSentence)
     }
