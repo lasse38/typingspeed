@@ -34,7 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
 
-
+//all sentences that are tested:
 val sentences = listOf(
     "How are you today?",
     "What's the weather like?",
@@ -138,61 +138,53 @@ val sentences = listOf(
     "Can you help me with my bags?"
 )
 
+//generates a random sentence:
 fun Sentence(): String {
     val randomIndex = Random.nextInt(sentences.size - 1)
     return sentences[randomIndex]
 
 }
-
+//puts the random sentence on the bottom screen, just above the keyboard:
 @Composable
 fun Randsentence(sentence2:String, modifier: Modifier = Modifier) {
-    // Assuming 'sentences' is a List<String> defined elsewhere
     Column(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.8f),
-            contentAlignment = Alignment.Center // Centers the text box within its allocated space
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = sentence2,
                 fontSize = 30.sp,
-                style = TextStyle(color = Color.Black), // Set text color to black
+                style = TextStyle(color = Color.Black),
                 modifier = Modifier
-                    .background(Color(0xFFFFA500)) // Set background to orange using ARGB
-                    .padding(20.dp) // Add some padding around the text for better aesthetics
+                    .background(Color(0xFFFFA500))
+                    .padding(20.dp)
                     .padding(bottom = 20.dp)
             )
         }
     }
 }
 
-
+//Main function that calls the Mainscreen function:
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TappingspeedTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MainScreen()
+                    val sentence2 = Sentence()
+                    MainScreen(sentence2)
                 }
             }
         }
     }
 }
-@Preview(showBackground = true)
-@Composable
-fun MainScreen() {
-    val sentence2 = Sentence()
-    Column(modifier = Modifier.fillMaxSize()) {
-        UpperFunction(sentence2)
-    }
-}
 
-
+//Main Function for the program, listens for input and evaluates it, shows typing speed and produces the whole screen:
 @Composable
-fun UpperFunction(sentence2:String) {
+fun MainScreen(sentence2:String) {
     var text by remember { mutableStateOf("") }
     val timer = remember { InputTimer() }
     var currentSentence by remember { mutableStateOf(sentence2) }
@@ -213,7 +205,7 @@ fun UpperFunction(sentence2:String) {
         TextField(
             value = text,
             onValueChange = { newText ->
-                if (newText.length == 1) { // Start timer on first character input
+                if (newText.length == 1) {
                     timer.manageTime()
                 }
                 text = newText
@@ -222,27 +214,28 @@ fun UpperFunction(sentence2:String) {
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
             modifier = Modifier.fillMaxWidth()
         )
+        //defines what happens when the user clicks on the next button, the typing speed is calculated and the correctness of the typed in text:
         Button(
             onClick = {
-                val elapsedTime = timer.complete() // Get elapsed time in seconds
+                val elapsedTime = timer.complete()
                 click = true
                 if (text.isNotEmpty()) {
-                    charsPerSecond = text.length / elapsedTime // Calculate characters per second
+                    charsPerSecond = text.length / elapsedTime
                     handleInput(text, charsPerSecond)
                     correctness = calculateCorrectness(currentSentence, text)
                 }
                 currentSentence = Sentence()
-                // Reset text for next input
                 text = ""
             },
             modifier = Modifier.padding(top = 8.dp)
         ) {
             Text("Next")
         }
+        //while the user is not clicking on the next button this function calculates the typing speed and correctness of the typed text:
         if (!click) {
-            val elapsedTime = timer.timeNow() // Get elapsed time in seconds
+            val elapsedTime = timer.timeNow()
             if (text.isNotEmpty()) {
-                charsPerSecond = text.length / elapsedTime // Calculate characters per second
+                charsPerSecond = text.length / elapsedTime
                 correctness = calculateCorrectness(currentSentence, text)
             }
         }
@@ -254,6 +247,7 @@ fun UpperFunction(sentence2:String) {
     }
 }
 
+//this function calculates the percentage of the text that is typed in exactly (it evaluates based on positions) like the displayed text:
 fun calculateCorrectness(correctText: String, inputText: String): Double {
     fun recurse(index: Int, matches: Int): Int {
         if (index >= correctText.length || index >= inputText.length) {
@@ -268,18 +262,17 @@ fun calculateCorrectness(correctText: String, inputText: String): Double {
     return (matchedCharacters.toDouble() / length) * 100
 }
 
-
-// Adjusted handleInput function to accept duration
 fun handleInput(input: String, charsPerSecond: Double) {
     // Handle the input and characters per second calculation
     Log.d("InputHandling", "User input: $input, Chars per second: $charsPerSecond")
 }
 
-// Function to manage timing logic
+//this class handles the time that has passed since the user typed in his first character and returns the elapsed time for a given end point in seconds:
 class InputTimer {
     private var startTime: Long = 0L
     private var started: Boolean = false
 
+    //this function can remember the time it was first called with the variable startTime:
     fun manageTime() {
         if (!started) {
             startTime = System.currentTimeMillis()
@@ -287,6 +280,7 @@ class InputTimer {
         }
     }
 
+    //this function returns the elapsed time from the call of manageTime until the call of complete and resets started to false:
     fun complete(): Double {
         if (started) {
             started = false
@@ -294,6 +288,7 @@ class InputTimer {
         }
         return 0.0
     }
+    //this function returns the elapsed time from the call of manageTime until the call of timeNow but does not reset started to false:
     fun timeNow(): Double{
         if (started) {
             return (System.currentTimeMillis() - startTime) / 1000.0
