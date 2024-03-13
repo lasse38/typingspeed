@@ -10,10 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import kotlin.random.Random
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextField
@@ -167,7 +166,7 @@ fun Randsentence(sentence2:String, modifier: Modifier = Modifier) {
     }
 }
 
-//Main function that calls the Mainscreen function:
+//Main function that calls the MainScreen function:
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -190,7 +189,7 @@ fun MainScreen(sentence2:String) {
     var currentSentence by remember { mutableStateOf(sentence2) }
     var charsPerSecond by remember { mutableDoubleStateOf(0.0) }
     var click = false
-    var correctness = 100.0
+    var correctness by remember { mutableStateOf(100.0) }
 
 
     Column(
@@ -202,6 +201,7 @@ fun MainScreen(sentence2:String) {
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
+        //Input field, if Enter is pressed the next sentence is displayed and the calculations for correctness and typingspeed are finalized
         TextField(
             value = text,
             onValueChange = { newText ->
@@ -212,6 +212,18 @@ fun MainScreen(sentence2:String) {
             },
             singleLine = true,
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    val elapsedTime = timer.complete()
+                    click = true
+                    if (text.isNotEmpty()) {
+                        charsPerSecond = text.length / elapsedTime
+                        correctness = calculateCorrectness(currentSentence, text)
+                    }
+                    currentSentence = Sentence()
+                    text = ""
+                }
+            ),
             modifier = Modifier.fillMaxWidth()
         )
         //defines what happens when the user clicks on the next button, the typing speed is calculated and the correctness of the typed in text:
@@ -221,7 +233,6 @@ fun MainScreen(sentence2:String) {
                 click = true
                 if (text.isNotEmpty()) {
                     charsPerSecond = text.length / elapsedTime
-                    handleInput(text, charsPerSecond)
                     correctness = calculateCorrectness(currentSentence, text)
                 }
                 currentSentence = Sentence()
@@ -231,6 +242,7 @@ fun MainScreen(sentence2:String) {
         ) {
             Text("Next")
         }
+
         //while the user is not clicking on the next button this function calculates the typing speed and correctness of the typed text:
         if (!click) {
             val elapsedTime = timer.timeNow()
@@ -240,12 +252,15 @@ fun MainScreen(sentence2:String) {
             }
         }
         if (charsPerSecond > 0) {
-            Text("Characters per second typed: " + String.format("%.2f", charsPerSecond))
-            Text("You have written " + String.format("%.2f", correctness) + "% of all Characters correctly")
+                Text("Characters per second: "+ String.format("%.2f", charsPerSecond))
+                Text("Correctness: "+ String.format("%.2f", correctness)+"%")
         }
+
         Randsentence(sentence2 = currentSentence)
     }
 }
+
+
 
 //this function calculates the percentage of the text that is typed in exactly (it evaluates based on positions) like the displayed text:
 fun calculateCorrectness(correctText: String, inputText: String): Double {
@@ -262,10 +277,6 @@ fun calculateCorrectness(correctText: String, inputText: String): Double {
     return (matchedCharacters.toDouble() / length) * 100
 }
 
-fun handleInput(input: String, charsPerSecond: Double) {
-    // Handle the input and characters per second calculation
-    Log.d("InputHandling", "User input: $input, Chars per second: $charsPerSecond")
-}
 
 //this class handles the time that has passed since the user typed in his first character and returns the elapsed time for a given end point in seconds:
 class InputTimer {
